@@ -42,7 +42,7 @@ install_env_and_full_node() {
     sudo docker-compose up -d
 
     # 等待PostgreSQL服务启动
-    until docker exec -t postgres_container_name pg_isready -h 127.0.0.1 -p 5432; do
+    until docker exec -t tracker-postgres-1 pg_isready -h 127.0.0.1 -p 5432; do
       echo "等待PostgreSQL数据库服务启动..."
       sleep 5
     done
