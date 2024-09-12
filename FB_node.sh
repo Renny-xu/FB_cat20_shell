@@ -18,13 +18,16 @@ install_fractal_bitcoin() {
     # 解压文件
     tar -xvf fractald-0.2.1-x86_64-linux-gnu.tar.gz
 
+    # 进入解压的目录
+    cd fractald-0.2.1-x86_64-linux-gnu
+
     # 配置权限
-    chmod +x fractald-0.2.1/bin/*
+    chmod +x bin/*
 }
 
 # 启动节点
 start_node() {
-    cd ~/fractal-bitcoin/fractald-0.2.1/bin
+    cd ~/fractal-bitcoin/fractald-0.2.1-x86_64-linux-gnu/bin
     ./fractald --daemon
 }
 
