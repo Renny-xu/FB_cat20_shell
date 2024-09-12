@@ -6,23 +6,30 @@ install_env_and_full_node_ubuntu() {
     sudo apt update
     sudo apt install -y curl wget jq git make nodejs npm docker.io docker-compose
 
-    # 安装yarn
-    sudo npm install -g yarn
+    # 检查并安装 yarn
+    if ! command -v yarn &> /dev/null; then
+        sudo npm install -g yarn
+    fi
 
     install_and_build_cat
 }
 
 # 安装并构建 CAT Token Box
 install_and_build_cat() {
-    git clone https://github.com/CATProtocol/cat-token-box
+    if [ ! -d "cat-token-box" ]; then
+        git clone https://github.com/CATProtocol/cat-token-box
+    fi
     cd cat-token-box
     yarn install
     yarn build
+
     cd ./packages/tracker/
     chmod 777 docker/data docker/pgdata
     docker-compose up -d
+
     cd ../../
     docker build -t tracker:latest .
+
     docker run -d \
         --name tracker \
         --add-host="host.docker.internal:host-gateway" \
@@ -30,29 +37,36 @@ install_and_build_cat() {
         -e RPC_HOST="host.docker.internal" \
         -p 3000:3000 \
         tracker:latest
+
     # 配置JSON文件
-    echo '{
-        "network": "fractal-mainnet",
-        "tracker": "http://127.0.0.1:3000",
-        "dataDir": ".",
-        "maxFeeRate": 30,
-        "rpc": {
-            "url": "http://127.0.0.1:8332",
-            "username": "bitcoin",
-            "password": "opcatAwesome"
-        }
-    }' > ~/cat-token-box/packages/cli/config.json
-    # 创建mint脚本
-    echo '#!/bin/bash
-    command="yarn cli mint -i 45ee725c2c5993b3e4d308842d87e973bf1951f5f7a804b21e4dd964ecd12d6b_0 5"
-    while true; do
-        $command
-        if [ $? -ne 0 ]; then
-            echo "命令执行失败，退出循环"
-            exit 1
-        fi
-        sleep 1
-    done' > ~/cat-token-box/packages/cli/mint_script.sh
+    cat <<EOF > ~/cat-token-box/packages/cli/config.json
+{
+    "network": "fractal-mainnet",
+    "tracker": "http://127.0.0.1:3000",
+    "dataDir": ".",
+    "maxFeeRate": 30,
+    "rpc": {
+        "url": "http://127.0.0.1:8332",
+        "username": "bitcoin",
+        "password": "opcatAwesome"
+    }
+}
+EOF
+
+    # 创建 mint 脚本
+    cat <<EOF > ~/cat-token-box/packages/cli/mint_script.sh
+#!/bin/bash
+command="yarn cli mint -i 45ee725c2c5993b3e4d308842d87e973bf1951f5f7a804b21e4dd964ecd12d6b_0 5"
+while true; do
+    \$command
+    if [ \$? -ne 0 ]; then
+        echo "命令执行失败，退出循环"
+        exit 1
+    fi
+    sleep 1
+done
+EOF
+
     chmod +x ~/cat-token-box/packages/cli/mint_script.sh
 }
 
